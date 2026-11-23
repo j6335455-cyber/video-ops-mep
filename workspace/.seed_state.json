@@ -1,0 +1,103 @@
+{
+  "protocol": "video-ops/1.0",
+  "revision": 1,
+  "updated_at": "2026-11-21T16:25:00",
+  "policy": {
+    "max_credits_per_request": 120,
+    "allow_duplicate_idempotency_key": false,
+    "require_human_review_before_publish": true
+  },
+  "account": {
+    "credits_balance": 320,
+    "credits_spent_total": 180,
+    "blocked_waste_credits": 0,
+    "blocked_incidents": 0
+  },
+  "templates": [
+    {
+      "id": "tpl_fashion_runway_v2",
+      "name": "法式街拍 · 模特回眸换装",
+      "default_model": "kling-4.0",
+      "cost_per_item": 20,
+      "avg_pass_rate": 0.84
+    },
+    {
+      "id": "tpl_wan3_reference_v1",
+      "name": "Wan 3.0 全能参考 · 爆款动作复刻",
+      "default_model": "wan-3.0",
+      "cost_per_item": 15,
+      "avg_pass_rate": 0.78
+    },
+    {
+      "id": "tpl_ugc_drama_15s",
+      "name": "15秒带货微剧情 · 痛点反转",
+      "default_model": "seedance-2.5",
+      "cost_per_item": 25,
+      "avg_pass_rate": 0.81
+    }
+  ],
+  "processed_idempotency_keys": [
+    "idem_seed_batch08_001"
+  ],
+  "assets": [
+    {
+      "id": "VID-101",
+      "sku": "FW26-COAT-01",
+      "title": "焦糖双面呢大衣 · 秋日街角回眸",
+      "model": "kling-4.0",
+      "template_id": "tpl_fashion_runway_v2",
+      "status": "approved",
+      "quality_score": 9.1,
+      "cost": 20,
+      "accent": "#C88A56",
+      "note": "光影自然，布料垂坠感达标，待上架"
+    },
+    {
+      "id": "VID-102",
+      "sku": "FW26-KNIT-08",
+      "title": "燕麦麻花针织衫 · 室内咖啡馆特写",
+      "model": "wan-3.0",
+      "template_id": "tpl_wan3_reference_v1",
+      "status": "review_pending",
+      "quality_score": 7.6,
+      "cost": 15,
+      "accent": "#8F9F8A",
+      "note": "第 4 秒手部轻微变形，待人工复核"
+    },
+    {
+      "id": "VID-103",
+      "sku": "FW26-PANT-12",
+      "title": "高腰微喇保暖裤 · 镜前穿搭对比",
+      "model": "seedance-2.5",
+      "template_id": "tpl_ugc_drama_15s",
+      "status": "remake",
+      "quality_score": 5.8,
+      "cost": 25,
+      "accent": "#B36A6A",
+      "note": "字幕节奏偏慢，人工已标重制"
+    },
+    {
+      "id": "VID-104",
+      "sku": "FW26-DRESS-04",
+      "title": "丝绒法式茶歇裙 · 展厅光斑慢镜",
+      "model": "kling-4.0",
+      "template_id": "tpl_fashion_runway_v2",
+      "status": "published",
+      "quality_score": 9.4,
+      "cost": 20,
+      "accent": "#6E7FA3",
+      "note": "已发布至灵感库，CTR 4.8%"
+    }
+  ],
+  "audit_log": [
+    {
+      "request_id": "req_seed_000",
+      "actor": "System",
+      "ok": true,
+      "summary": "初始化第 8 批服装视觉资产（4 条样本，账户余额 320 积分）",
+      "revision": 1,
+      "snapshot_id": null,
+      "at": "2026-11-21T16:25:00"
+    }
+  ]
+}

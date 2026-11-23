@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VideoOps-MEP · 多模型 AIGC 批量生产受控工作台</title>
+  <style>
+    :root {
+      --bg: #F6F5F2;
+      --surface: #FFFFFF;
+      --surface-soft: #EFECE6;
+      --ink: #18181B;
+      --muted: #6B6B73;
+      --line: rgba(24, 24, 27, 0.09);
+      --accent: #18181B;
+      --ok: #1F7A4C;
+      --ok-bg: #E8F5EE;
+      --warn: #A86414;
+      --warn-bg: #FDF3E3;
+      --err: #B83333;
+      --err-bg: #FCEAEA;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 28px 60px; }
+
+    /* Header */
+    .topbar {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px;
+      padding-bottom: 24px; border-bottom: 1px solid var(--line);
+    }
+    .kicker { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .title { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 4px; }
+    .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .rev-pill {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 16px; font-size: 12px; font-weight: 500;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .mono { font-family: "SF Mono", Menlo, monospace; }
+
+    /* KPI Strip (小影/天猫4维评估标准: 质量/成本/稳定性/可控性) */
+    .metrics {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px;
+    }
+    .metric {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .metric-label { font-size: 12px; color: var(--muted); }
+    .metric-val { font-size: 28px; font-weight: 650; letter-spacing: -0.03em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .metric-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Scenario Deck (面试现场一键演示 4 个核心剧本) */
+    .scenarios {
+      margin-top: 22px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .sec-title { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    button {
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      border-radius: 12px; padding: 10px 15px; font-size: 12.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.16s ease;
+    }
+    button:hover { transform: translateY(-1px); border-color: var(--ink); }
+    .btn-primary { background: var(--accent); color: #FFF; border-color: var(--accent); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-danger { color: var(--err); background: var(--err-bg); border-color: transparent; }
+    .btn-warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+    .btn-ghost { background: transparent; color: var(--muted); padding: 6px 12px; font-size: 12px; }
+
+    /* Main Split: Left Visual Screening Gallery + Right Protocol Inspector */
+    .grid {
+      display: grid; grid-template-columns: 1.45fr 1fr; gap: 22px; margin-top: 24px; align-items: start;
+    }
+    @media (max-width: 960px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Visual Screening Gallery (视觉对照墙) */
+    .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    @media (max-width: 640px) { .gallery { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      overflow: hidden; transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.05); }
+    .poster {
+      height: 118px; padding: 14px 16px; color: #FFF;
+      display: flex; flex-direction: column; justify-content: space-between;
+      position: relative;
+    }
+    .poster-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .chip {
+      padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 500;
+      background: rgba(255,255,255,0.22); backdrop-filter: blur(6px);
+    }
+    .poster-title { font-size: 14px; font-weight: 600; line-height: 1.35; text-shadow: 0 1px 8px rgba(0,0,0,0.18); }
+    .card-body { padding: 14px 16px; }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--muted); }
+    .card-note { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 34px; }
+    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .st-approved { background: var(--ok-bg); color: var(--ok); }
+    .st-published { background: #E9EFFC; color: #2654B8; }
+    .st-review_pending { background: var(--warn-bg); color: var(--warn); }
+    .st-remake { background: var(--err-bg); color: var(--err); }
+    .st-archived { background: var(--surface-soft); color: var(--muted); }
+    .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .card-actions button { flex: 1; padding: 6px 8px; font-size: 11.5px; border-radius: 9px; }
+
+    /* Right Protocol Inspector & Audit */
+    .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px 20px; margin-bottom: 16px;
+    }
+    pre {
+      background: #18181B; color: #EAEAEF; border-radius: 12px; padding: 14px;
+      font-size: 11.5px; line-height: 1.55; overflow-x: auto; max-height: 250px;
+    }
+    .log-item {
+      padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line);
+      margin-bottom: 8px; font-size: 12px;
+    }
+    .log-ok { background: #FAFDFB; }
+    .log-err { background: #FFF9F9; border-color: rgba(184,51,51,0.22); }
+    .log-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .rollback-btn { padding: 3px 9px; font-size: 11px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div>
+        <div class="kicker">VideoOps-MEP 1.0 · Deterministic AI-Software Workbench</div>
+        <h1 class="title">多模型 AIGC 批量生产受控工作台</h1>
+        <p class="subtitle">AI 开声明式处方（requests/*.json）· 确定性网关按 4 道护栏动刀并写回执（results/*.result.json）</p>
+      </div>
+      <div class="rev-pill">
+        <span class="dot"></span>
+        <span>真实磁盘协议态</span>
+        <span class="mono" id="rev-badge">rev.1</span>
+        <button class="btn-ghost" onclick="resetDemo()">重置演示</button>
+      </div>
+    </header>
+
+    <!-- 4 维核心指标（直接对标小影/天猫/阿里评估标准：成本/可控性/稳定性/出片效率） -->
+    <section class="metrics">
+      <div class="metric">
+        <div class="metric-label">账户剩余积分（成本防线）</div>
+        <div class="metric-val" id="m-balance">320</div>
+        <div class="metric-sub" id="m-spent">累计正常消耗 180 · 单单熔断上限 120</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">拦截误扣费总额（可控性）</div>
+        <div class="metric-val" style="color: var(--ok)" id="m-saved">0</div>
+        <div class="metric-sub" id="m-blocked">累计拦截异常请求 0 次 · 0 误烧钱</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">已复核 / 已上架作品（出片效率）</div>
+        <div class="metric-val" id="m-ready">2 / 4</div>
+        <div class="metric-sub">端到端：模板生成 → 对照筛选 → 上架</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">当前协议版本号（一致性）</div>
+        <div class="metric-val mono" id="m-rev">rev.1</div>
+        <div class="metric-sub" id="m-files">0 请求单 · 0 审计回执</div>
+      </div>
+    </section>
+
+    <!-- 面试投屏 4 大演示剧本 -->
+    <section class="scenarios">
+      <div class="sec-head">
+        <span class="sec-title">🎬 一键现场演示（每个按钮都会往真实磁盘 workspace/requests/ 落单并经网关校验）</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="runNormalBatch()">① 正常批处理：AI 按模板并发投递 2 条 Kling4（-40 积分）</button>
+        <button class="btn-danger" onclick="runDuplicateAttack()">② 模拟 AI 抽风重试：重复幂等键扣费 → 拦截</button>
+        <button class="btn-danger" onclick="runBudgetOverflow()">③ 模拟 AI 幻觉超额：一口气提交 200 积分 → 预算熔断</button>
+        <button class="btn-warn" onclick="runStaleRevision()">④ 模拟人机冲突：AI 拿旧 revision 企图覆盖人工标记 → 乐观锁拦截</button>
+      </div>
+    </section>
+
+    <main class="grid">
+      <!-- 左侧：视觉对照筛选墙 -->
+      <section>
+        <div class="sec-head">
+          <span class="sec-title">🖼️ 视觉对照台（人工点击标记会自动递增 revision，AI 无法静默覆盖）</span>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </section>
+
+      <!-- 右侧：实时协议回执与回滚审计 -->
+      <section>
+        <div class="panel">
+          <div class="sec-head">
+            <span class="sec-title">📡 最新网关回执（workspace/results/*.result.json）</span>
+            <span class="mono" style="font-size:11px;color:var(--muted)" id="last-status">等待下单</span>
+          </div>
+          <pre id="receipt-box">点击上方任意演示按钮，查看实时写入磁盘的 MEP 结构化回执与错误码……</pre>
+        </div>
+
+        <div class="panel">
+          <div class="sec-head">
+            <span class="sec-title">📜 事务审计与一键整单回滚（snapshots/）</span>
+          </div>
+          <div id="audit-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    let currentState = null;
+    let seq = 1;
+
+    const STATUS_LABEL = {
+      approved: '已通过 · 待上架',
+      published: '已上架',
+      review_pending: '待人工复核',
+      remake: '已标重制',
+      archived: '已下架归档'
+    };
+
+    async function fetchState() {
+      const res = await fetch('/api/state');
+      const data = await res.json();
+      currentState = data.state;
+      render(data.request_files, data.result_files);
+    }
+
+    async function submitMEP(payload) {
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      currentState = data.state;
+      const r = data.result;
+      const badge = document.getElementById('last-status');
+      badge.textContent = r.ok ? `✅ PASS (rev.${r.new_revision})` : `🛑 BLOCKED (${r.error_code})`;
+      badge.style.color = r.ok ? 'var(--ok)' : 'var(--err)';
+      document.getElementById('receipt-box').textContent = JSON.stringify(r, null, 2);
+      await fetchState();
+    }
+
+    function runNormalBatch() {
+      const n = seq++;
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_batch_${Date.now().toString().slice(-4)}_${n}`,
+        idempotency_key: `idem_demo_batch_${n}`,
+        actor: 'Codex (Batch Director)',
+        base_revision: currentState.revision,
+        max_credit_budget: 100,
+        ops: [{
+          op: 'submit_generation_batch',
+          template_id: 'tpl_fashion_runway_v2',
+          model: 'kling-4.0',
+          cost_per_item: 20,
+          items: [
+            { sku: `FW26-NEW-${n}A`, title: `羊毛赫本风大衣 · 逆光步态 #${n}`, prompt_summary: '自然光慢镜、保留面料质感' },
+            { sku: `FW26-NEW-${n}B`, title: `法式针织套装 · 咖啡馆转身 #${n}`, prompt_summary: '中景切近景，突出领口细节' }
+          ]
+        }]
+      });
+    }
+
+    function runDuplicateAttack() {
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_dup_${Date.now().toString().slice(-4)}`,
+        idempotency_key: 'idem_seed_batch08_001',
+        actor: 'Cron-Retry-Bot',
+        base_revision: currentState.revision,
+        max_credit_budget: 120,
+        ops: [{
+          op: 'submit_generation_batch',
+          template_id: 'tpl_fashion_runway_v2',
+          model: 'kling-4.0',
+          cost_per_item: 20,
+          items: [
+            { sku: 'DUP-1', title: '重复提交测试视频 A' },
+            { sku: 'DUP-2', title: '重复提交测试视频 B' },
+            { sku: 'DUP-3', title: '重复提交测试视频 C' }
+          ]
+        }]
+      });
+    }
+
+    function runBudgetOverflow() {
+      const items = Array.from({ length: 10 }, (_, i) => ({ sku: `OVER-${i + 1}`, title: `失控批量生成 #${i + 1}` }));
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_over_${Date.now().toString().slice(-4)}`,
+        idempotency_key: `idem_over_${Date.now()}`,
+        actor: 'Runaway-Agent',
+        base_revision: currentState.revision,
+        max_credit_budget: 120,
+        ops: [{
+          op: 'submit_generation_batch',
+          template_id: 'tpl_fashion_runway_v2',
+          model: 'kling-4.0',
+          cost_per_item: 20,
+          items
+        }]
+      });
+    }
+
+    function runStaleRevision() {
+      const staleRev = Math.max(0, currentState.revision - 1);
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_stale_${Date.now().toString().slice(-4)}`,
+        idempotency_key: `idem_stale_${Date.now()}`,
+        actor: 'Antigravity (Stale Context)',
+        base_revision: staleRev,
+        max_credit_budget: 60,
+        ops: [{ op: 'publish_selected', asset_ids: ['VID-101'] }]
+      });
+    }
+
+    function markAsset(assetId, status) {
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_human_${Date.now().toString().slice(-4)}`,
+        idempotency_key: `idem_human_${Date.now()}`,
+        actor: 'Human (视觉对照台)',
+        base_revision: currentState.revision,
+        ops: [{ op: 'review_mark', asset_id: assetId, status, note: `人工刚在对照台标记为 ${STATUS_LABEL[status]}` }]
+      });
+    }
+
+    function publishAsset(assetId) {
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_pub_${Date.now().toString().slice(-4)}`,
+        idempotency_key: `idem_pub_${Date.now()}`,
+        actor: 'Human / Agent',
+        base_revision: currentState.revision,
+        ops: [{ op: 'publish_selected', asset_ids: [assetId] }]
+      });
+    }
+
+    function rollbackTo(snapId) {
+      submitMEP({
+        mep: 'video-ops/1.0',
+        request_id: `req_rb_${Date.now().toString().slice(-4)}`,
+        actor: 'Human (整单回滚)',
+        base_revision: currentState.revision,
+        ops: [{ op: 'rollback', snapshot_id: snapId }]
+      });
+    }
+
+    async function resetDemo() {
+      await fetch('/api/reset', { method: 'POST' });
+      document.getElementById('receipt-box').textContent = '演示已重置到初始状态（rev.1）。';
+      document.getElementById('last-status').textContent = '已重置';
+      document.getElementById('last-status').style.color = 'var(--muted)';
+      await fetchState();
+    }
+
+    function render(reqFiles = [], resFiles = []) {
+      const s = currentState;
+      document.getElementById('rev-badge').textContent = `rev.${s.revision}`;
+      document.getElementById('m-rev').textContent = `rev.${s.revision}`;
+      document.getElementById('m-balance').textContent = s.account.credits_balance;
+      document.getElementById('m-spent').textContent = `累计正常消耗 ${s.account.credits_spent_total} · 单单熔断上限 ${s.policy.max_credits_per_request}`;
+      document.getElementById('m-saved').textContent = `+${s.account.blocked_waste_credits}`;
+      document.getElementById('m-blocked').textContent = `累计拦截异常 ${s.account.blocked_incidents} 次 · 0 误烧钱`;
+      const good = s.assets.filter(a => a.status === 'approved' || a.status === 'published').length;
+      document.getElementById('m-ready').textContent = `${good} / ${s.assets.length}`;
+      document.getElementById('m-files').textContent = `${reqFiles.length} 请求单 · ${resFiles.length} 审计回执`;
+
+      document.getElementById('gallery').innerHTML = s.assets.map(a => `
+        <article class="card">
+          <div class="poster" style="background: linear-gradient(135deg, ${a.accent}, #23252C);">
+            <div class="poster-top">
+              <span class="chip mono">${a.id} · ${a.model}</span>
+              <span class="chip">评分 ${a.quality_score}</span>
+            </div>
+            <div class="poster-title">${a.title}</div>
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="status-badge st-${a.status}">${STATUS_LABEL[a.status] || a.status}</span>
+              <span class="mono">${a.sku} · ${a.cost}分</span>
+            </div>
+            <p class="card-note">${a.note}</p>
+            <div class="card-actions">
+              <button onclick="markAsset('${a.id}', 'approved')">通过</button>
+              <button onclick="markAsset('${a.id}', 'remake')">标重制</button>
+              <button onclick="publishAsset('${a.id}')">上架</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      document.getElementById('audit-list').innerHTML = s.audit_log.slice(0, 7).map(item => `
+        <div class="log-item ${item.ok ? 'log-ok' : 'log-err'}">
+          <div class="log-top">
+            <span class="mono" style="font-weight:600;color:${item.ok ? 'var(--ok)' : 'var(--err)'}">
+              ${item.ok ? 'PASS' : 'BLOCK'} · ${item.actor}
+            </span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="mono" style="color:var(--muted)">rev.${item.revision}</span>
+              ${item.snapshot_id ? `<button class="rollback-btn" onclick="rollbackTo('${item.snapshot_id}')">↩ 整单回滚</button>` : ''}
+            </div>
+          </div>
+          <div>${item.summary}</div>
+        </div>
+      `).join('');
+    }
+
+    fetchState();
+  </script>
+</body>
+</html>
